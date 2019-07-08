@@ -31,16 +31,19 @@ author:
 
 normative:
   RFC2119:
+  RFC6181:
+  RFC6824:
+  RFC7430:
+ 
 
 informative:
-  RFC6824:
   I-D.ietf-mptcp-rfc6824bis:
   RFC8040:
   RFC3630:
 
 --- abstract
 
-This document defines an MPTCP Option for hosts to request their peers to limit the maximum transfer rate on a subflow.
+This document defines a new MPTCP Option that enables hosts to request their peers to limit the maximum transfer rate on a per-subflow basis.
 
 
 --- middle
@@ -48,22 +51,25 @@ This document defines an MPTCP Option for hosts to request their peers to limit 
 Introduction        {#problems}
 ============
 
-Multipath TCP {{RFC6824}} {{I-D.ietf-mptcp-rfc6824bis}} is used in various use cases {{RFC8040}}. In several situations, a Multipath TCP host would like its peer to limit the sending rate over a subflow.
+Multipath TCP {{RFC6824}} {{I-D.ietf-mptcp-rfc6824bis}} is used in various use cases {{RFC8040}}. In several situations, a Multipath TCP host would like its peer to limit the sending rate over a specific subflow.
 
-It is common that the mobile clients have a limited cellular data subscription. Even if this is not the case, mobile network operators
-may still silently throttle the networking capacity of those customers
-who have used up a large amount of cellular data. As the time of
-this writing, a good LTE or 5G connection running at full speed in a
-few hour could squeze all monthly budget cellular quota. A common
-scenario is that the mobile users want to limit the monetary cost of
-using cellular networks or to avoid running out of the mobile data
-quota. However, most of the traffic are down-streamed - on which
-the clients cannot control directly. For this, the clients would desire
-the servers to limit the maximum throughput on the cellular network
-subflow. This is more important when the mobile clients are roaming
-abroad where the monetary cost for cellular data is usually very high.
+It is common for mobile clients to have a limited cellular data subscription. Even if this is not the case, mobile network operators may still silently throttle the networking capacity of the customers
+who have used up a large amount of cellular data. At the time of
+this writing, a good LTE or 5G connection running at full speed during
+less than a few hours could consumme the entire monthly budget cellular quota of many users. 
+This is even more important when the mobile clients are roaming
+abroad where the monetary cost for cellular data can be very high. A common
+scenario is that mobile users want to limit the monetary cost of
+using cellular networks or to avoid running out of their mobile data
+quota. Smartphones can easily rate limit their upstreambandwidth, but
+unfortunately, most smartphone applications mainly receive data. For these
+applications, a rate limit must happen on the server side. This rate limit could
+be enforced by the application, e.g. by selecting a specific video coding scheme, but
+some users desire to have it at the transport layer. 
 
-As discussed on the multipathtcp IETF mailling list [99], this rate-control mechanism can also be used when a client wants to tell a sender to close a subflow gracefully by requesting the zero transfer rate. Though the client may send a TCP-RST on this subflow instead, in-flight data would be lost and must be reinjected over other subflows. Another solution is to send an MP_PRIO option to the sender to put the cellular subflow into backup mode, but this request could be overriden by the sender’s local policy.
+As discussed recently on the multipathtcp IETF mailling list {{ref}}, this rate-control mechanism can also be used when a client wants to inform a server to close a subflow gracefully by requesting a zero transfer rate. Though the client may send a TCP-RST on this subflow instead, in-flight data would be lost and must be reinjected over other subflows. Another solution is to send an MP_PRIO option to the sender to put the cellular subflow into backup mode, but this request could be overriden by the sender’s local policy.
+
+
 
 Terminology          {#Terminology}
 ===========
@@ -76,7 +82,7 @@ and "OPTIONAL" are to be interpreted as described in BCP 14, RFC 2119 {{RFC2119}
 The Multipath TCP Subflow Rate Limit (SRL) Option   {#ops}
 =========================================
 
-
+This document proposes a Subflow Rate Limit option that indicates a maximum receive rate for the subflow it is sent. Like other MPTCP options, this option is not sent reliably. Hosts SHOULD resend is several times, but not more frequently than once per second.
 
 Option Format      {#format}
 --------------
@@ -95,7 +101,7 @@ The format of the SRL option is depicted in Fig. {{figformat}}:
 ~~~~~~~~~~
 {: #figformat title="MPTCP Subflow Rate Limit Option Format"}
 
-In the SRL option, the Requested Rate (32 bits) is specified in IEEE 754 binary32 format (single-precision binary floating-point format). The same format has been used in {{RFC3630}} to specify the maximum bandwidth. This format is as follows:
+In the SRL option, the Requested Rate (32 bits) is specified in IEEE 754 binary32 format (single-precision binary floating-point format). The same format is used in {{RFC3630}} to specify the maximum bandwidth of a link. This format is as follows:
 
 ~~~~~~~~~~
    0                   1                   2                   3
@@ -122,7 +128,7 @@ The unit of this value is Kilobits per second (Kbps).
 SRL Option and Local Policies
 -----------------------------
 
-Note that the SRL option is an indicative value. Upon reception of this option, the receiver MAY choose to set the maximum rate on the same subflow.
+Note that the SRL option is an indicative value. Upon reception of this option, the receiver SHOULD set the maximum rate on the subflow over which the option was received.
 
 Like all Multipath TCP options, the SRL Option is exchanged without any protection from TCP's reliability mechanisms.  Therefore, implementations MUST NOT assume that it is transferred reliably. Implementations that use the SRL option can transmit the SRL option at any time. Since the utilisation of this option is not negotiated during the connection handshake, a host MUST NOT send more than three SRL options on a connection where it has not received any SRL option.
 
@@ -130,15 +136,15 @@ Like all Multipath TCP options, the SRL Option is exchanged without any protecti
 Implementation and Interoperability
 ===================================
 
-If TCP Pacing is supported, implementations MAY use this mechanism to implement the rate control. 
+If TCP Pacing is supported, implementations SHOULD use this mechanism to implement the rate control. 
 
 
 Security Considerations
 =======================
 
-Since the SRL option is neither encrypted nor authenticated, on-path attackers and middleboxes could remove, add or modify the SRL option on observed Multipath TCP connections. However, the incentive of manipulating this option is unclear.
+Since the SRL option is neither encrypted nor authenticated, on-path attackers and middleboxes could remove, add or modify the SRL option on observed Multipath TCP connections. However, manipulating this option doing not open new attacks compared to the ones documented in {{RFC6181}} {{RFC7430}}.
 
-For example, an on-path middle man may insert an option to throttle the rate on a subflow to nearly zero, effectively stall the subflow. However, if an attacker has that capability, it could instead drop all packets or inject the TCP-RST/MPTCP-FASTCLOSE.
+For example, an on-path middle man could insert an option to throttle the rate on a subflow to nearly zero, effectively stalling the subflow. However, if an attacker has that capability, it could instead drop all packets or inject the TCP-RST/MPTCP-FASTCLOSE.
 
 On the other hand, the on-path middlebox may increase the rate-limit value in the exchanged option to a very high value. This effectively has the same effect as filtering out the option.
 

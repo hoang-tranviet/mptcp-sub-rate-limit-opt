@@ -42,7 +42,7 @@
     <abstract>
 
 
-<t>This document defines an MPTCP Option for hosts to request their peers to limit the maximum transfer rate on a subflow.</t>
+<t>This document defines a new MPTCP Option that enables hosts to request their peers to limit the maximum transfer rate on a per-subflow basis.</t>
 
 
 
@@ -56,22 +56,21 @@
 
 <section anchor="problems" title="Introduction">
 
-<t>Multipath TCP <xref target="RFC6824"/> <xref target="I-D.ietf-mptcp-rfc6824bis"/> is used in various use cases <xref target="RFC8040"/>. In several situations, a Multipath TCP host would like its peer to limit the sending rate over a subflow.</t>
+<t>Multipath TCP <xref target="RFC6824"/> <xref target="I-D.ietf-mptcp-rfc6824bis"/> is used in various use cases <xref target="RFC8040"/>. In several situations, a Multipath TCP host would like its peer to limit the sending rate over a specific subflow.</t>
 
-<t>It is common that the mobile clients have a limited cellular data subscription. Even if this is not the case, mobile network operators
-may still silently throttle the networking capacity of those customers
-who have used up a large amount of cellular data. As the time of
-this writing, a good LTE or 5G connection running at full speed in a
-few hour could squeze all monthly budget cellular quota. A common
-scenario is that the mobile users want to limit the monetary cost of
-using cellular networks or to avoid running out of the mobile data
-quota. However, most of the traffic are down-streamed - on which
-the clients cannot control directly. For this, the clients would desire
-the servers to limit the maximum throughput on the cellular network
-subflow. This is more important when the mobile clients are roaming
-abroad where the monetary cost for cellular data is usually very high.</t>
+<t>It is common for mobile clients to have a limited cellular data subscription. Even if this is not the case, mobile network operators may still silently throttle the networking capacity of the customers
+who have used up a large amount of cellular data. A good LTE or 5G connection running at full speed during
+less than a few hours could consume the entire monthly budget cellular quota of many users.
+This is even more important when the mobile clients are roaming
+abroad where the monetary cost for cellular data can be very high. A common
+scenario is that mobile users want to limit the monetary cost of
+using cellular networks or to avoid running out of their mobile data
+quota. Smartphones can easily rate limit their upstream bandwidth, but
+unfortunately, most smartphone applications mainly receive data. For these
+applications, a rate limit must happen on the server side. This rate limit could
+be enforced by the application, e.g. by selecting a specific video coding scheme, but applying it at the transport layer would be more generic and could be done from the system level automatically.</t>
 
-<t>As discussed on the multipathtcp IETF mailling list [99], this rate-control mechanism can also be used when a client wants to tell a sender to close a subflow gracefully by requesting the zero transfer rate. Though the client may send a TCP-RST on this subflow instead, in-flight data would be lost and must be reinjected over other subflows. Another solution is to send an MP_PRIO option to the sender to put the cellular subflow into backup mode, but this request could be overriden by the sender’s local policy.</t>
+<t>As discussed on the multipathtcp IETF mailling list <xref target="paasch_multipathtcp_2019"/>, this rate-control mechanism can also be used when a client wants to inform a server to close a subflow gracefully by requesting a zero transfer rate. Though the client may send a TCP-RST on this subflow instead, in-flight data would be lost and must be reinjected over other subflows. Another solution is to send an MP_PRIO option to the sender to put the cellular subflow into backup mode, but this request could be overriden by the sender’s local policy.</t>
 
 </section>
 <section anchor="Terminology" title="Terminology">
@@ -81,6 +80,8 @@ and “OPTIONAL” are to be interpreted as described in BCP 14, RFC 2119 <xref 
 
 </section>
 <section anchor="ops" title="The Multipath TCP Subflow Rate Limit (SRL) Option">
+
+<t>This document proposes a Subflow Rate Limit option that indicates a maximum receive rate for the subflow it is sent. Like other MPTCP options, this option is not sent reliably. Hosts SHOULD resend is several times, but not more frequently than once per second.</t>
 
 <section anchor="format" title="Option Format">
 
@@ -97,7 +98,7 @@ and “OPTIONAL” are to be interpreted as described in BCP 14, RFC 2119 <xref 
 
 ]]></artwork></figure>
 
-<t>In the SRL option, the Requested Rate (32 bits) is specified in IEEE 754 binary32 format (single-precision binary floating-point format). The same format has been used in <xref target="RFC3630"/> to specify the maximum bandwidth. This format is as follows:</t>
+<t>In the SRL option, the Requested Rate (32 bits) is specified in IEEE 754 binary32 format (single-precision binary floating-point format). The same format is used in <xref target="RFC3630"/> to specify the maximum bandwidth of a link. This format is as follows:</t>
 
 <figure title="IEEE binary32 format" anchor="figIEEE"><artwork><![CDATA[
    0                   1                   2                   3
@@ -126,7 +127,7 @@ and “OPTIONAL” are to be interpreted as described in BCP 14, RFC 2119 <xref 
 </section>
 <section anchor="srl-option-and-local-policies" title="SRL Option and Local Policies">
 
-<t>Note that the SRL option is an indicative value. Upon reception of this option, the receiver MAY choose to set the maximum rate on the same subflow.</t>
+<t>Note that the SRL option is an indicative value. Upon reception of this option, the receiver SHOULD set the maximum rate on the subflow over which the option was received.</t>
 
 <t>Like all Multipath TCP options, the SRL Option is exchanged without any protection from TCP’s reliability mechanisms.  Therefore, implementations MUST NOT assume that it is transferred reliably. Implementations that use the SRL option can transmit the SRL option at any time. Since the utilisation of this option is not negotiated during the connection handshake, a host MUST NOT send more than three SRL options on a connection where it has not received any SRL option.</t>
 
@@ -134,14 +135,14 @@ and “OPTIONAL” are to be interpreted as described in BCP 14, RFC 2119 <xref 
 </section>
 <section anchor="implementation-and-interoperability" title="Implementation and Interoperability">
 
-<t>If TCP Pacing is supported, implementations MAY use this mechanism to implement the rate control.</t>
+<t>If TCP Pacing is supported, implementations SHOULD use this mechanism to implement the rate control.</t>
 
 </section>
 <section anchor="security-considerations" title="Security Considerations">
 
-<t>Since the SRL option is neither encrypted nor authenticated, on-path attackers and middleboxes could remove, add or modify the SRL option on observed Multipath TCP connections. However, the incentive of manipulating this option is unclear.</t>
+<t>Since the SRL option is neither encrypted nor authenticated, on-path attackers and middleboxes could remove, add or modify the SRL option on observed Multipath TCP connections. However, manipulating this option doing not open new attacks compared to the ones documented in <xref target="RFC6181"/> <xref target="RFC7430"/>.</t>
 
-<t>For example, an on-path middle man may insert an option to throttle the rate on a subflow to nearly zero, effectively stall the subflow. However, if an attacker has that capability, it could instead drop all packets or inject the TCP-RST/MPTCP-FASTCLOSE.</t>
+<t>For example, an on-path middle man could insert an option to throttle the rate on a subflow to nearly zero, effectively stalling the subflow. However, if an attacker has that capability, it could instead drop all packets or inject the TCP-RST/MPTCP-FASTCLOSE.</t>
 
 <t>On the other hand, the on-path middlebox may increase the rate-limit value in the exchanged option to a very high value. This effectively has the same effect as filtering out the option.</t>
 
@@ -177,12 +178,16 @@ and “OPTIONAL” are to be interpreted as described in BCP 14, RFC 2119 <xref 
 
 
 
-
-    </references>
-
-    <references title='Informative References'>
-
-
+<reference  anchor="RFC6181" target='https://www.rfc-editor.org/info/rfc6181'>
+<front>
+<title>Threat Analysis for TCP Extensions for Multipath Operation with Multiple Addresses</title>
+<author initials='M.' surname='Bagnulo' fullname='M. Bagnulo'><organization /></author>
+<date year='2011' month='March' />
+<abstract><t>Multipath TCP (MPTCP for short) describes the extensions proposed for TCP so that endpoints of a given TCP connection can use multiple paths to exchange data.  Such extensions enable the exchange of segments using different source-destination address pairs, resulting in the capability of using multiple paths in a significant number of scenarios.  Some level of multihoming and mobility support can be achieved through these extensions.  However, the support for multiple IP addresses per endpoint may have implications on the security of the resulting MPTCP.  This note includes a threat analysis for MPTCP. This document is not an Internet Standards Track specification; it is published for informational purposes.</t></abstract>
+</front>
+<seriesInfo name='RFC' value='6181'/>
+<seriesInfo name='DOI' value='10.17487/RFC6181'/>
+</reference>
 
 
 
@@ -199,6 +204,32 @@ and “OPTIONAL” are to be interpreted as described in BCP 14, RFC 2119 <xref 
 <seriesInfo name='RFC' value='6824'/>
 <seriesInfo name='DOI' value='10.17487/RFC6824'/>
 </reference>
+
+
+
+<reference  anchor="RFC7430" target='https://www.rfc-editor.org/info/rfc7430'>
+<front>
+<title>Analysis of Residual Threats and Possible Fixes for Multipath TCP (MPTCP)</title>
+<author initials='M.' surname='Bagnulo' fullname='M. Bagnulo'><organization /></author>
+<author initials='C.' surname='Paasch' fullname='C. Paasch'><organization /></author>
+<author initials='F.' surname='Gont' fullname='F. Gont'><organization /></author>
+<author initials='O.' surname='Bonaventure' fullname='O. Bonaventure'><organization /></author>
+<author initials='C.' surname='Raiciu' fullname='C. Raiciu'><organization /></author>
+<date year='2015' month='July' />
+<abstract><t>This document analyzes the residual threats for Multipath TCP (MPTCP) and explores possible solutions to address them.</t></abstract>
+</front>
+<seriesInfo name='RFC' value='7430'/>
+<seriesInfo name='DOI' value='10.17487/RFC7430'/>
+</reference>
+
+
+
+
+    </references>
+
+    <references title='Informative References'>
+
+
 
 
 
@@ -268,6 +299,15 @@ and “OPTIONAL” are to be interpreted as described in BCP 14, RFC 2119 <xref 
 </reference>
 
 
+<reference anchor="paasch_multipathtcp_2019" target="https://mailarchive.ietf.org/arch/msg/multipathtcp/fyhIpWnXCr0sImRECGh8Lx1zWdc">
+  <front>
+    <title>Regarding rate control at a subflow level</title>
+    <author initials="C." surname="Paasch" fullname="Christoph Paasch">
+      <organization></organization>
+    </author>
+    <date year="2019" month="May"/>
+  </front>
+</reference>
 
 
     </references>
@@ -277,67 +317,76 @@ and “OPTIONAL” are to be interpreted as described in BCP 14, RFC 2119 <xref 
   </back>
 
 <!-- ##markdown-source:
-H4sIANBjIF0AA61Y627cuBX+r6c48P6onYwmvuXiAQLUSeyNEcd2PU6KYrFY
-UBJnho0kaklqxpPERV+jr9cn6XdIam6xd7dNlQDWiNThOd/5zk1pmiZOuVIO
-6H1bOtUIN6Gb11c0bLNRqWd0LZykc1UpR5eNU7pORJYZOR1Q1bi8SW2bpQZ7
-0pL3pLpxSaHzWlSQWBgxculD+9Ld3aTAkwHt7+4dpbvP092nSY4HY23mA1L1
-SCeJasyAnGmt29/dPdrdT4SRYkA3w4/JTJtPY6PbBqpfscp/xQNVj+lHfph8
-knPsKAZ0VjtpaunSN6xOklgn6uIXUeoaR8+lTRo1oJ+czntktXFGjizu5hXf
-/JwkonUTbQYJpQnhUrUd0Mc+3RhR+wfB1I8KB7zVAscvVrQZi1p9FozagD7U
-aiqNVYATRk50qX5tJRUAV7dTocIrshKqHNCEBfUdBP25zcuw3s/kmg6XfXql
-azGVtWuNXFHlslRTJc03q/+DOhZoSDegq7JPQ+x8JUwme7TvF3Pl4Ka4PS1F
-eiHbaTgq1wUU2Ts4fBF/trVjn76S5Vi11aqpOmjbz5bartuc1NpUUHoq4QO6
-Pn29v7d3NAAzwI/1hWcv9g/59ix904c7RpF5ZpTzSqZs3Pdi93A33h48O8Bt
-kqYpiQzWihwEuZkoSyBxW0EfQDJStbQk6kizEAaE0+En6yw5TUYCPevITaQy
-1Eggy4891/khVeJWVW1F7FM7gnc4FghiBNkQaf0k6FGpoihhNmhrdNHm/rB4
-ffmhMTorZWXvkpcrV5KsB++XLxGOuzvcP4gHVmFpa2UBStFUGKVb/xuUsDDZ
-i2G07u76CCOyEpQRJYE1racRAkVs5A2GhGa6LQtY/0mSAkCMxzocVtYFh2pA
-AVLXcDhzrFeuqwqmu4mIEOpMlVCtVHCLpQnogre8TBiQy7JsS2EIKcXLsrlR
-3lN9OgGxSI0gBWLxv9ZBIlvZ6+QiQ3BGId3ARqeNTSoxRwSokg0ucWY5x1tG
-O2RL/3p8g+3IRSM4HkjzKZoRRMrSFXiQzCY6KOuBbhtWWpgxlK84LviVNeX7
-dGy9fKcqgDNKvNozoxxOYsDHWhd0fnOCiKanPwKnupaBJqata1YHiI1a1hvI
-e9+KZCRn8E1rOBjhGwu+foYK2ASQ3QS2ZW0xlm6py6+t9spERyQ2lzVThBHc
-dApMA+NnAuas0x5J1gkzhwzLliat9XB1Z0QILZuCF8VUq2JhhW5dwHNxDMOT
-RL3e6hnTkf1nF/sQXqORyglVAhE8q1POYMiKBaUcbLOJyieJd31kUS5qZgMw
-RLSVVCgDKMt5n05ZIwDfo9XtgdiFtNiXBCKb6cPBDra040nDdtRBzobhSUd6
-uoncrDRUV1WDSsRoziayvo/9bKDRogJOKMi4K3irkfegzolqPTp80Lfw/Zyg
-/JwmajxB2IF2hbIgLvM0Klx1wY3MQWcnN6fEabtk95QKwn86Ovq5FwLLV/cO
-yErmE1QbWzHCoJnVlMUI8CaJaInnjIfPQUXOAsgMIVugCFi5zAs0RnaWTGtQ
-dd5lXFaE9fwsjV5Prgwpo7/iP/IRjQMgFbkqvR7eBDuhfXcKaquToujhJh2V
-AMYFzILnYUPJmKKDADS4wQMjVf13sIZB40ymcaDp5FkEUB2f6LL1Uaq8vUEP
-Liq/XF2fXSLv+EVGIibIAAOzZ406S02xmon8E1JKhYLbQwS76IpYjvJOaVbM
-qALAZ/MV+f/+578sDMqR0xsU4nwOFtxIA1bpUo/nRMvCs/J4rfagToUzu4IZ
-AgbdF3H7ZWnr/YfhzVYv/KWLS39/ffKXD2fXJ2+2esnW8O3x+Tk/9DfdjuHb
-yw/nb5Z3yzdfX75/f3Lx5sQvvj/+G2SwO7Yur27OLi+Oz7d8cDhPOMW9X2Mk
-O0dYDlxUhSzkxFeoVnuHPW4DiHuKUO74DuUuSYgbAfn7XfH28Pp8p2sKGCnd
-bFTn37xQ9ZP48qnvZzrAQ3dzxz3ByhWUCmtd0oMCHXvYD7JRnoww8VSN+zBr
-pMZR2h2anX8sLt+H7dK31949z/bveXYQJexh9YAO6Sk9o+f0go7+m2cs4/G6
-lelDvzf/LtZZyFev0zsFMvgLv89lPYbrXuJE/Ib33LyRX2nb2OkO1q9DnAAs
-dujX/7MmtCH/HgDjde/Jv3c9XnPllwH9sPAz+ZHu5VZoWB8c5SLjtu6SEMWr
-VAphvGHA9sE+ZejodphoaC5yNVKBaWcnJyf0/OkhltEkzLEvarLNBb+UKYIw
-V5YPDTsIKglO32mjEaVx+w5nbWQnlOxOwARxm0lkrq5P9WHKjTvaV86jXo35
-WuHNkBBmqnCTWFejKNwJ/lFyYv4mEr47EL4/Dh6n3/kvYZZ79p3cNugCarfC
-xpXrlCedlcFig4vfr8c91PQUicT09xtUYRoOaKjGTBEQZ4//gBC+bmRcsnxz
-yZW+j40LA7dfLDnJJJDdQob2HkCDMlvyNpfW0t7+8y3u/v3wwkIWOGzvH6xL
-qdCXKGsFGse9Hs0UsgiKNRqzkhkfVGenB/bijJHRoZlXjqvopI2to8hQfFGR
-EQDWt278cCrKFmNrEiDfTvd2Hj3aHu7QI9rHTWdaCn35GaB4vFB1J5SAtlax
-AEBhL441f6dKnYWRC42CRDdW0Pa7rLE7PF5ydMfI54p57gv/FRd+JW3ym8km
-SS60k8u+f73mMDIY6HI/jQdt+vSh4YlE5jJs63RdTS+8yp8hCGWc8onmhs+3
-Rut9dDcruy41LEfFc54xeYpZr9PhkOiBFbNxPqiAznTMjSicyjOGqOeEudrF
-IQqOrFjIn7iPKpVA382T3aKjRUvHScpI0BZNF1NCcuMTJmLq2hykGouGKECm
-fPLp+lODw4NonjTONgT4F3gI38CZG2kvoRszVtZEsIInxj5CqM7D2+g30aWL
-e/DvxuBajrVTgjN80Zqum14ZKWFzYSfik+TJ0w/3CwN9B+vnFajM3jFyVSkb
-Pm+syAoTigo5nU+P/i+88ss3mavrqHi++g95fjwPLvkjTRYEjTwjrjCfwzrf
-6Tc8XcniHt+BhgF5nsQWIwwoudgZeMuEjKNOnziyZA70wJLXEIM+2wSBD2mI
-FxY+Wo+kWio/LMg6N/OG3VJjfONvkDibA4zV1nXqmS6cQ/vP46efR/yHo0zf
-ShsbfyMr5B44rih4wMaQ0BXKlUP5f+bH2GIjiJaesyvjNr/Oytc+1sEqZErV
-YDKJs9gaxdo6L6UwcCjP0/JWMIw9zhedDUFrFuKnM4xf0ji/YWUeWvno8s13
-M95R4wyMhVwaeiRHI9Z6Kkv+fMO5weeNbtBeGKJGfEyHoeekDz3+lhMI1mOu
-BijjWEgFCOjzTcNvOf/hIox//pQ4VT7xjVd6ejy8eX1+OTyB/ZchfYVRkIMq
-ILkOA5wXUciNFHZpcfhq3uX5Ota5LpEtoRLLgb5Lw74BWsUkGBozaVjwbZEq
-EV7ddxev2zIYjy+O/wC148blAArdWClruaiL+P00amtDM+4/T2xQ0mdgfra1
-9sU1tu8WA95UqBLZU3LimzjX2MGTJ7PZrK9ELfrajJ+EMzlg7RP+6NkIA3Nh
-4ObP/u3EVWX49MrDdPIfh+KoDBIZAAA=
+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
++Q97iDAwlxwAAA==
 
 -->
 

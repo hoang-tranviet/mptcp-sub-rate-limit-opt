@@ -40,6 +40,14 @@ informative:
   I-D.ietf-mptcp-rfc6824bis:
   RFC8040:
   RFC3630:
+  paasch_multipathtcp_2019:
+    title: Regarding rate control at a subflow level
+    target: https://mailarchive.ietf.org/arch/msg/multipathtcp/fyhIpWnXCr0sImRECGh8Lx1zWdc
+    author:
+      name: Christoph Paasch
+      ins: C. Paasch
+    date: 2019-05
+
 
 --- abstract
 
@@ -54,20 +62,18 @@ Introduction        {#problems}
 Multipath TCP {{RFC6824}} {{I-D.ietf-mptcp-rfc6824bis}} is used in various use cases {{RFC8040}}. In several situations, a Multipath TCP host would like its peer to limit the sending rate over a specific subflow.
 
 It is common for mobile clients to have a limited cellular data subscription. Even if this is not the case, mobile network operators may still silently throttle the networking capacity of the customers
-who have used up a large amount of cellular data. At the time of
-this writing, a good LTE or 5G connection running at full speed during
-less than a few hours could consumme the entire monthly budget cellular quota of many users. 
+who have used up a large amount of cellular data. A good LTE or 5G connection running at full speed during
+less than a few hours could consume the entire monthly budget cellular quota of many users.
 This is even more important when the mobile clients are roaming
 abroad where the monetary cost for cellular data can be very high. A common
 scenario is that mobile users want to limit the monetary cost of
 using cellular networks or to avoid running out of their mobile data
-quota. Smartphones can easily rate limit their upstreambandwidth, but
+quota. Smartphones can easily rate limit their upstream bandwidth, but
 unfortunately, most smartphone applications mainly receive data. For these
 applications, a rate limit must happen on the server side. This rate limit could
-be enforced by the application, e.g. by selecting a specific video coding scheme, but
-some users desire to have it at the transport layer. 
+be enforced by the application, e.g. by selecting a specific video coding scheme, but applying it at the transport layer would be more generic and could be done from the system level automatically.
 
-As discussed recently on the multipathtcp IETF mailling list {{ref}}, this rate-control mechanism can also be used when a client wants to inform a server to close a subflow gracefully by requesting a zero transfer rate. Though the client may send a TCP-RST on this subflow instead, in-flight data would be lost and must be reinjected over other subflows. Another solution is to send an MP_PRIO option to the sender to put the cellular subflow into backup mode, but this request could be overriden by the sender’s local policy.
+As discussed on the multipathtcp IETF mailling list {{paasch_multipathtcp_2019}}, this rate-control mechanism can also be used when a client wants to inform a server to close a subflow gracefully by requesting a zero transfer rate. Though the client may send a TCP-RST on this subflow instead, in-flight data would be lost and must be reinjected over other subflows. Another solution is to send an MP_PRIO option to the sender to put the cellular subflow into backup mode, but this request could be overriden by the sender’s local policy.
 
 
 

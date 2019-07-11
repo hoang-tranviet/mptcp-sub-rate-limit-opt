@@ -128,7 +128,7 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
 
    This document proposes a Subflow Rate Limit option that indicates a
    maximum receive rate for the subflow it is sent.  Like other MPTCP
-   options, this option is not sent reliably.  Hosts SHOULD resend is
+   options, this option is not sent reliably.  Hosts SHOULD resend it
    several times, but not more frequently than once per second.
 
 3.1.  Option Format
@@ -138,7 +138,7 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
        0                   1                   2                   3
        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
       +---------------+---------------+-------+-------+---------------+
-      |     Kind      |  Length = 5   |Subtype| (rsv) | Requested Rate|
+      |     Kind      |  Length = 7   |Subtype| (rsv) | Requested Rate|
       +---------------+---------------+-------+-------+---------------+
       |       Requested Rate                          |
       +-----------------------------------------------+
@@ -201,7 +201,9 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
 
    Implementations MAY use various mechanisms to implement the rate
    control policy, for example using TCP Pacing or clamping the subflow
-   congestion window.
+   congestion window.  For old implementations that are unaware of this
+   option, they should ignore when receive unknown MPTCP options, as
+   specified in [RFC6824] and [I-D.ietf-mptcp-rfc6824bis].
 
 5.  Security Considerations
 
@@ -215,8 +217,6 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
    the rate on a subflow to nearly zero, effectively stalling the
    subflow.  However, if an attacker has that capability, it could
    instead drop all packets or inject the TCP-RST/MP-FASTCLOSE.
-
-
 
 
 

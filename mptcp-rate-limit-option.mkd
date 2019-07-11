@@ -88,7 +88,7 @@ and "OPTIONAL" are to be interpreted as described in BCP 14, RFC 2119 {{RFC2119}
 The Multipath TCP Subflow Rate Limit (SRL) Option   {#ops}
 =========================================
 
-This document proposes a Subflow Rate Limit option that indicates a maximum receive rate for the subflow it is sent. Like other MPTCP options, this option is not sent reliably. Hosts SHOULD resend is several times, but not more frequently than once per second.
+This document proposes a Subflow Rate Limit option that indicates a maximum receive rate for the subflow it is sent. Like other MPTCP options, this option is not sent reliably. Hosts SHOULD resend it several times, but not more frequently than once per second.
 
 Option Format      {#format}
 --------------
@@ -99,7 +99,7 @@ The format of the SRL option is depicted in Fig. {{figformat}}:
     0                   1                   2                   3
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
    +---------------+---------------+-------+-------+---------------+
-   |     Kind      |  Length = 5   |Subtype| (rsv) | Requested Rate|
+   |     Kind      |  Length = 7   |Subtype| (rsv) | Requested Rate|
    +---------------+---------------+-------+-------+---------------+
    |       Requested Rate                          |
    +-----------------------------------------------+
@@ -144,7 +144,7 @@ Implementation and Interoperability
 ===================================
 
 Implementations MAY use various mechanisms to implement the rate control policy, for example using TCP Pacing or clamping the subflow congestion window.
-
+For old implementations that are unaware of this option, they should ignore when receive unknown MPTCP options, as specified in {{RFC6824}} and {{I-D.ietf-mptcp-rfc6824bis}}.
 
 Security Considerations
 =======================

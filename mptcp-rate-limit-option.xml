@@ -70,8 +70,6 @@ unfortunately, most smartphone applications mainly receive data. For these
 applications, a rate limit must happen on the server side. This rate limit could
 be enforced by the application, e.g. by selecting a specific video coding scheme, but applying it at the transport layer would be more generic and could be done from the system level automatically.</t>
 
-<t>As discussed on the multipathtcp IETF mailing list <xref target="paasch_mptcpwg_2019"/>, this rate-control mechanism can also be used when a client wants to inform a server to close a subflow gracefully by requesting a zero transfer rate. Though the client may send a TCP-RST on this subflow instead, in-flight data would be lost and must be reinjected over other subflows. Another solution is to send an MP_PRIO option to the sender to put the cellular subflow into backup mode, but this request could be overridden by the sender’s local policy.</t>
-
 </section>
 <section anchor="Terminology" title="Terminology">
 <t>In this document, the key words “MUST”, “MUST NOT”, “REQUIRED”,
@@ -130,7 +128,7 @@ and “OPTIONAL” are to be interpreted as described in BCP 14, RFC 2119 <xref 
 
 <t>Note that the SRL option is an indicative value. Upon reception of this option, the receiver SHOULD set the maximum rate on the subflow over which the option was received.</t>
 
-<t>Like all Multipath TCP options, the SRL Option is exchanged without any protection from TCP’s reliability mechanisms.  Therefore, implementations MUST NOT assume that it is transferred reliably. Implementations that use the SRL option can transmit the SRL option at any time. Since the utilisation of this option is not negotiated during the connection handshake, a host MUST NOT send more than three SRL options on a connection where it has not received any SRL option.</t>
+<t>Like all Multipath TCP options, the SRL Option is exchanged without any protection from TCP’s reliability mechanisms.  Therefore, implementations MUST NOT assume that it is transferred reliably. Implementations that use the SRL option can transmit the SRL option at any time. Since the utilisation of this option is not negotiated during the connection handshake, a host MUST NOT send more than three SRL options on a connection.</t>
 
 </section>
 </section>
@@ -307,15 +305,6 @@ the Walinnov MQUIC project, No. 1810018.</t>
 </reference>
 
 
-<reference anchor="paasch_mptcpwg_2019" target="https://mailarchive.ietf.org/arch/msg/multipathtcp/fyhIpWnXCr0sImRECGh8Lx1zWdc">
-  <front>
-    <title>Regarding rate control at a subflow level</title>
-    <author initials="C." surname="Paasch" fullname="Christoph Paasch">
-      <organization></organization>
-    </author>
-    <date year="2019" month="May"/>
-  </front>
-</reference>
 
 
     </references>
@@ -325,79 +314,71 @@ the Walinnov MQUIC project, No. 1810018.</t>
   </back>
 
 <!-- ##markdown-source:
-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
+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
 
 -->
 

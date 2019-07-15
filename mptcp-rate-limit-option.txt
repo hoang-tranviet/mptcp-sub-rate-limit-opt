@@ -61,13 +61,13 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
 Table of Contents
 
    1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
-   2.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   3
+   2.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   2
    3.  The Multipath TCP Subflow Rate Limit (SRL) Option . . . . . .   3
      3.1.  Option Format . . . . . . . . . . . . . . . . . . . . . .   3
      3.2.  SRL Option and Local Policies . . . . . . . . . . . . . .   4
    4.  Implementation and Interoperability . . . . . . . . . . . . .   4
    5.  Security Considerations . . . . . . . . . . . . . . . . . . .   4
-   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   5
+   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   4
    7.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .   5
    8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   5
      8.1.  Normative References  . . . . . . . . . . . . . . . . . .   5
@@ -99,13 +99,13 @@ Table of Contents
    transport layer would be more generic and could be done from the
    system level automatically.
 
-   As discussed on the multipathtcp IETF mailing list
-   [paasch_mptcpwg_2019], this rate-control mechanism can also be used
-   when a client wants to inform a server to close a subflow gracefully
-   by requesting a zero transfer rate.  Though the client may send a
-   TCP-RST on this subflow instead, in-flight data would be lost and
-   must be reinjected over other subflows.  Another solution is to send
-   an MP_PRIO option to the sender to put the cellular subflow into
+2.  Terminology
+
+   In this document, the key words "MUST", "MUST NOT", "REQUIRED",
+   "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY",
+   and "OPTIONAL" are to be interpreted as described in BCP 14, RFC 2119
+   [RFC2119].
+
 
 
 
@@ -113,16 +113,6 @@ Tran & Bonaventure       Expires January 9, 2020                [Page 2]
 
 Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
 
-
-   backup mode, but this request could be overridden by the sender's
-   local policy.
-
-2.  Terminology
-
-   In this document, the key words "MUST", "MUST NOT", "REQUIRED",
-   "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY",
-   and "OPTIONAL" are to be interpreted as described in BCP 14, RFC 2119
-   [RFC2119].
 
 3.  The Multipath TCP Subflow Rate Limit (SRL) Option
 
@@ -162,14 +152,6 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
 
                       Figure 2: IEEE binary32 format
 
-
-
-
-Tran & Bonaventure       Expires January 9, 2020                [Page 3]
-
-Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
-
-
    o  Sign bit (1 bit) MUST be set to zero.
 
    o  Exponent (8 bits) is the exponent base 2 in "excess 127" notation.
@@ -180,6 +162,13 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
    Thus, the above represents the value:
 
      (-1)**(S) * 2**(Exponent-127) * (1 + Fraction)
+
+
+
+Tran & Bonaventure       Expires January 9, 2020                [Page 3]
+
+Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
+
 
    The unit of this value is Kilobits per second (Kbps).
 
@@ -195,7 +184,7 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
    Implementations that use the SRL option can transmit the SRL option
    at any time.  Since the utilisation of this option is not negotiated
    during the connection handshake, a host MUST NOT send more than three
-   SRL options on a connection where it has not received any SRL option.
+   SRL options on a connection.
 
 4.  Implementation and Interoperability
 
@@ -218,14 +207,6 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
    subflow.  However, if an attacker has that capability, it could
    instead drop all packets or inject the TCP-RST/MP-FASTCLOSE.
 
-
-
-
-Tran & Bonaventure       Expires January 9, 2020                [Page 4]
-
-Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
-
-
    On the other hand, on-path middleboxes may increase the rate-limit
    value in the exchanged option to a very high value.  This effectively
    has the same effect as filtering out the option.
@@ -235,6 +216,15 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
    IANA is requested to assign an MPTCP option subtype for the SRL
    option from the "MPTCP Option Subtypes" available at
    https://www.iana.org/assignments/tcp-parameters/tcp-parameters.xhtml
+
+
+
+
+
+Tran & Bonaventure       Expires January 9, 2020                [Page 4]
+
+Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
+
 
 7.  Acknowledgements
 
@@ -274,20 +264,6 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
               Multiple Addresses", draft-ietf-mptcp-rfc6824bis-18 (work
               in progress), June 2019.
 
-
-
-
-Tran & Bonaventure       Expires January 9, 2020                [Page 5]
-
-Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
-
-
-   [paasch_mptcpwg_2019]
-              Paasch, C., "Regarding rate control at a subflow level",
-              May 2019,
-              <https://mailarchive.ietf.org/arch/msg/multipathtcp/
-              fyhIpWnXCr0sImRECGh8Lx1zWdc>.
-
    [RFC3630]  Katz, D., Kompella, K., and D. Yeung, "Traffic Engineering
               (TE) Extensions to OSPF Version 2", RFC 3630,
               DOI 10.17487/RFC3630, September 2003,
@@ -296,6 +272,15 @@ Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
    [RFC8040]  Bierman, A., Bjorklund, M., and K. Watsen, "RESTCONF
               Protocol", RFC 8040, DOI 10.17487/RFC8040, January 2017,
               <https://www.rfc-editor.org/info/rfc8040>.
+
+
+
+
+
+Tran & Bonaventure       Expires January 9, 2020                [Page 5]
+
+Internet-Draft          mptcp-sub-rate-limit-opt               July 2019
+
 
 Authors' Addresses
 
@@ -312,6 +297,21 @@ Authors' Addresses
    Belgium
 
    Email: olivier.bonaventure@uclouvain.be
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

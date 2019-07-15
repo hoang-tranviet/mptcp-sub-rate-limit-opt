@@ -40,13 +40,6 @@ informative:
   I-D.ietf-mptcp-rfc6824bis:
   RFC8040:
   RFC3630:
-  paasch_mptcpwg_2019:
-    title: Regarding rate control at a subflow level
-    target: https://mailarchive.ietf.org/arch/msg/multipathtcp/fyhIpWnXCr0sImRECGh8Lx1zWdc
-    author:
-      name: Christoph Paasch
-      ins: C. Paasch
-    date: 2019-05
 
 
 --- abstract
@@ -72,8 +65,6 @@ quota. Smartphones can easily rate limit their upstream bandwidth, but
 unfortunately, most smartphone applications mainly receive data. For these
 applications, a rate limit must happen on the server side. This rate limit could
 be enforced by the application, e.g. by selecting a specific video coding scheme, but applying it at the transport layer would be more generic and could be done from the system level automatically.
-
-As discussed on the multipathtcp IETF mailing list {{paasch_mptcpwg_2019}}, this rate-control mechanism can also be used when a client wants to inform a server to close a subflow gracefully by requesting a zero transfer rate. Though the client may send a TCP-RST on this subflow instead, in-flight data would be lost and must be reinjected over other subflows. Another solution is to send an MP_PRIO option to the sender to put the cellular subflow into backup mode, but this request could be overridden by the sender’s local policy.
 
 
 
@@ -137,7 +128,7 @@ SRL Option and Local Policies
 
 Note that the SRL option is an indicative value. Upon reception of this option, the receiver SHOULD set the maximum rate on the subflow over which the option was received.
 
-Like all Multipath TCP options, the SRL Option is exchanged without any protection from TCP's reliability mechanisms.  Therefore, implementations MUST NOT assume that it is transferred reliably. Implementations that use the SRL option can transmit the SRL option at any time. Since the utilisation of this option is not negotiated during the connection handshake, a host MUST NOT send more than three SRL options on a connection where it has not received any SRL option.
+Like all Multipath TCP options, the SRL Option is exchanged without any protection from TCP's reliability mechanisms.  Therefore, implementations MUST NOT assume that it is transferred reliably. Implementations that use the SRL option can transmit the SRL option at any time. Since the utilisation of this option is not negotiated during the connection handshake, a host MUST NOT send more than three SRL options on a connection.
 
 
 Implementation and Interoperability
